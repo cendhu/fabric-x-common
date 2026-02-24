@@ -261,7 +261,7 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 
 	logger.Debugf("[channel: %s] Received seekInfo (%p) %v from %s", chdr.ChannelId, seekInfo, seekInfo, addr)
 
-	cursor, number := chain.Reader().Iterator(seekInfo.Start)
+	cursor, number := chain.Reader().Iterator(ctx, seekInfo.Start)
 	defer cursor.Close()
 	var stopNum uint64
 	switch stop := seekInfo.Stop.Type.(type) {

@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package blkstorage
 
 import (
+	"context"
 	"time"
 
 	"github.com/hyperledger/fabric-protos-go-apiv2/common"
@@ -77,8 +78,8 @@ func (store *BlockStore) GetBlockchainInfo() (*common.BlockchainInfo, error) {
 }
 
 // RetrieveBlocks returns an iterator that can be used for iterating over a range of blocks
-func (store *BlockStore) RetrieveBlocks(startNum uint64) (ledger.ResultsIterator, error) {
-	return store.fileMgr.retrieveBlocks(startNum)
+func (store *BlockStore) RetrieveBlocks(ctx context.Context, startNum uint64) (ledger.ResultsIterator, error) {
+	return store.fileMgr.retrieveBlocks(ctx, startNum)
 }
 
 // RetrieveBlockByHash returns the block for given block-hash

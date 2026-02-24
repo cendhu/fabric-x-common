@@ -8,6 +8,7 @@ package blkstorage
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"math"
 	"sync"
@@ -609,14 +610,14 @@ func (mgr *blockfileMgr) retrieveBlockHeaderByNumber(blockNum uint64) (*common.B
 	return info.blockHeader, nil
 }
 
-func (mgr *blockfileMgr) retrieveBlocks(startNum uint64) (*blocksItr, error) {
+func (mgr *blockfileMgr) retrieveBlocks(ctx context.Context, startNum uint64) (*blocksItr, error) {
 	if startNum < mgr.firstPossibleBlockNumberInBlockFiles() {
 		return nil, errors.Errorf(
 			"cannot serve block [%d]. The ledger is bootstrapped from a snapshot. First available block = [%d]",
 			startNum, mgr.firstPossibleBlockNumberInBlockFiles(),
 		)
 	}
-	return newBlockItr(mgr, startNum), nil
+	return newBlockItr(ctx, mgr, startNum), nil
 }
 
 func (mgr *blockfileMgr) txIDExists(txID string) (bool, error) {

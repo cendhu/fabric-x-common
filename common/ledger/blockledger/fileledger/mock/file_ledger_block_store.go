@@ -2,6 +2,7 @@
 package mock
 
 import (
+	"context"
 	"sync"
 
 	"github.com/hyperledger/fabric-protos-go-apiv2/common"
@@ -66,10 +67,11 @@ type FileLedgerBlockStore struct {
 		result1 *common.Block
 		result2 error
 	}
-	RetrieveBlocksStub        func(uint64) (ledger.ResultsIterator, error)
+	RetrieveBlocksStub        func(context.Context, uint64) (ledger.ResultsIterator, error)
 	retrieveBlocksMutex       sync.RWMutex
 	retrieveBlocksArgsForCall []struct {
-		arg1 uint64
+		arg1 context.Context
+		arg2 uint64
 	}
 	retrieveBlocksReturns struct {
 		result1 ledger.ResultsIterator
@@ -382,18 +384,19 @@ func (fake *FileLedgerBlockStore) RetrieveBlockByNumberReturnsOnCall(i int, resu
 	}{result1, result2}
 }
 
-func (fake *FileLedgerBlockStore) RetrieveBlocks(arg1 uint64) (ledger.ResultsIterator, error) {
+func (fake *FileLedgerBlockStore) RetrieveBlocks(arg1 context.Context, arg2 uint64) (ledger.ResultsIterator, error) {
 	fake.retrieveBlocksMutex.Lock()
 	ret, specificReturn := fake.retrieveBlocksReturnsOnCall[len(fake.retrieveBlocksArgsForCall)]
 	fake.retrieveBlocksArgsForCall = append(fake.retrieveBlocksArgsForCall, struct {
-		arg1 uint64
-	}{arg1})
+		arg1 context.Context
+		arg2 uint64
+	}{arg1, arg2})
 	stub := fake.RetrieveBlocksStub
 	fakeReturns := fake.retrieveBlocksReturns
-	fake.recordInvocation("RetrieveBlocks", []interface{}{arg1})
+	fake.recordInvocation("RetrieveBlocks", []interface{}{arg1, arg2})
 	fake.retrieveBlocksMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -407,17 +410,17 @@ func (fake *FileLedgerBlockStore) RetrieveBlocksCallCount() int {
 	return len(fake.retrieveBlocksArgsForCall)
 }
 
-func (fake *FileLedgerBlockStore) RetrieveBlocksCalls(stub func(uint64) (ledger.ResultsIterator, error)) {
+func (fake *FileLedgerBlockStore) RetrieveBlocksCalls(stub func(context.Context, uint64) (ledger.ResultsIterator, error)) {
 	fake.retrieveBlocksMutex.Lock()
 	defer fake.retrieveBlocksMutex.Unlock()
 	fake.RetrieveBlocksStub = stub
 }
 
-func (fake *FileLedgerBlockStore) RetrieveBlocksArgsForCall(i int) uint64 {
+func (fake *FileLedgerBlockStore) RetrieveBlocksArgsForCall(i int) (context.Context, uint64) {
 	fake.retrieveBlocksMutex.RLock()
 	defer fake.retrieveBlocksMutex.RUnlock()
 	argsForCall := fake.retrieveBlocksArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FileLedgerBlockStore) RetrieveBlocksReturns(result1 ledger.ResultsIterator, result2 error) {

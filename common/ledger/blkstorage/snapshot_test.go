@@ -465,7 +465,7 @@ func verifyQueriesOnBlocksPriorToSnapshot(
 		_, err := bootstrappedBlockStore.RetrieveBlockByNumber(blockNum)
 		require.EqualError(t, err, expectedErrStr)
 
-		_, err = bootstrappedBlockStore.RetrieveBlocks(blockNum)
+		_, err = bootstrappedBlockStore.RetrieveBlocks(t.Context(), blockNum)
 		require.EqualError(t, err, expectedErrStr)
 
 		_, err = bootstrappedBlockStore.RetrieveTxByBlockNumTranNum(blockNum, 0)
@@ -517,7 +517,7 @@ func verifyQueriesOnBlocksAddedAfterBootstrapping(t *testing.T,
 		require.NoError(t, err)
 		require.Equal(t, b, retrievedBlock)
 
-		itr, err := bootstrappedBlockStore.RetrieveBlocks(b.Header.Number)
+		itr, err := bootstrappedBlockStore.RetrieveBlocks(t.Context(), b.Header.Number)
 		require.NoError(t, err)
 		blk, err := itr.Next()
 		require.NoError(t, err)

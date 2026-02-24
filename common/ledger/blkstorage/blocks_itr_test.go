@@ -27,7 +27,7 @@ func TestBlocksItrBlockingNext(t *testing.T) {
 	blocks := testutil.ConstructTestBlocks(t, 10)
 	blkfileMgrWrapper.addBlocks(blocks[:5])
 
-	itr, err := blkfileMgr.retrieveBlocks(1)
+	itr, err := blkfileMgr.retrieveBlocks(t.Context(), 1)
 	require.NoError(t, err)
 	defer itr.Close()
 	readyChan := make(chan struct{})
@@ -51,7 +51,7 @@ func TestBlockItrClose(t *testing.T) {
 	blocks := testutil.ConstructTestBlocks(t, 5)
 	blkfileMgrWrapper.addBlocks(blocks)
 
-	itr, err := blkfileMgr.retrieveBlocks(1)
+	itr, err := blkfileMgr.retrieveBlocks(t.Context(), 1)
 	require.NoError(t, err)
 
 	bh, _ := itr.Next()
@@ -74,7 +74,7 @@ func TestRaceToDeadlock(t *testing.T) {
 	blkfileMgrWrapper.addBlocks(blocks)
 
 	for i := 0; i < 1000; i++ {
-		itr, err := blkfileMgr.retrieveBlocks(5)
+		itr, err := blkfileMgr.retrieveBlocks(t.Context(), 5)
 		if err != nil {
 			panic(err)
 		}
@@ -85,7 +85,7 @@ func TestRaceToDeadlock(t *testing.T) {
 	}
 
 	for i := 0; i < 1000; i++ {
-		itr, err := blkfileMgr.retrieveBlocks(5)
+		itr, err := blkfileMgr.retrieveBlocks(t.Context(), 5)
 		if err != nil {
 			panic(err)
 		}
@@ -105,7 +105,7 @@ func TestBlockItrCloseWithoutRetrieve(t *testing.T) {
 	blocks := testutil.ConstructTestBlocks(t, 5)
 	blkfileMgrWrapper.addBlocks(blocks)
 
-	itr, err := blkfileMgr.retrieveBlocks(2)
+	itr, err := blkfileMgr.retrieveBlocks(t.Context(), 2)
 	require.NoError(t, err)
 	itr.Close()
 }
@@ -121,12 +121,12 @@ func TestCloseMultipleItrsWaitForFutureBlock(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
-	itr1, err := blkfileMgr.retrieveBlocks(7)
+	itr1, err := blkfileMgr.retrieveBlocks(t.Context(), 7)
 	require.NoError(t, err)
 	// itr1 does not retrieve any block because it closes before new blocks are added
 	go iterateInBackground(t, itr1, 9, wg, []uint64{})
 
-	itr2, err := blkfileMgr.retrieveBlocks(8)
+	itr2, err := blkfileMgr.retrieveBlocks(t.Context(), 8)
 	require.NoError(t, err)
 	// itr2 retrieves two blocks 8 and 9. Because it started waiting for 8 and quits at 9
 	go iterateInBackground(t, itr2, 9, wg, []uint64{8, 9})

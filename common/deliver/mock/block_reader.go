@@ -2,6 +2,7 @@
 package mock
 
 import (
+	"context"
 	"sync"
 
 	"github.com/hyperledger/fabric-protos-go-apiv2/common"
@@ -20,10 +21,11 @@ type BlockReader struct {
 	heightReturnsOnCall map[int]struct {
 		result1 uint64
 	}
-	IteratorStub        func(*orderer.SeekPosition) (blockledger.Iterator, uint64)
+	IteratorStub        func(context.Context, *orderer.SeekPosition) (blockledger.Iterator, uint64)
 	iteratorMutex       sync.RWMutex
 	iteratorArgsForCall []struct {
-		arg1 *orderer.SeekPosition
+		arg1 context.Context
+		arg2 *orderer.SeekPosition
 	}
 	iteratorReturns struct {
 		result1 blockledger.Iterator
@@ -103,18 +105,19 @@ func (fake *BlockReader) HeightReturnsOnCall(i int, result1 uint64) {
 	}{result1}
 }
 
-func (fake *BlockReader) Iterator(arg1 *orderer.SeekPosition) (blockledger.Iterator, uint64) {
+func (fake *BlockReader) Iterator(arg1 context.Context, arg2 *orderer.SeekPosition) (blockledger.Iterator, uint64) {
 	fake.iteratorMutex.Lock()
 	ret, specificReturn := fake.iteratorReturnsOnCall[len(fake.iteratorArgsForCall)]
 	fake.iteratorArgsForCall = append(fake.iteratorArgsForCall, struct {
-		arg1 *orderer.SeekPosition
-	}{arg1})
+		arg1 context.Context
+		arg2 *orderer.SeekPosition
+	}{arg1, arg2})
 	stub := fake.IteratorStub
 	fakeReturns := fake.iteratorReturns
-	fake.recordInvocation("Iterator", []interface{}{arg1})
+	fake.recordInvocation("Iterator", []interface{}{arg1, arg2})
 	fake.iteratorMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -128,17 +131,17 @@ func (fake *BlockReader) IteratorCallCount() int {
 	return len(fake.iteratorArgsForCall)
 }
 
-func (fake *BlockReader) IteratorCalls(stub func(*orderer.SeekPosition) (blockledger.Iterator, uint64)) {
+func (fake *BlockReader) IteratorCalls(stub func(context.Context, *orderer.SeekPosition) (blockledger.Iterator, uint64)) {
 	fake.iteratorMutex.Lock()
 	defer fake.iteratorMutex.Unlock()
 	fake.IteratorStub = stub
 }
 
-func (fake *BlockReader) IteratorArgsForCall(i int) *orderer.SeekPosition {
+func (fake *BlockReader) IteratorArgsForCall(i int) (context.Context, *orderer.SeekPosition) {
 	fake.iteratorMutex.RLock()
 	defer fake.iteratorMutex.RUnlock()
 	argsForCall := fake.iteratorArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *BlockReader) IteratorReturns(result1 blockledger.Iterator, result2 uint64) {

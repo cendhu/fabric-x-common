@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package fileledger
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -80,7 +81,7 @@ func (mbs *mockBlockStore) GetBlockchainInfo() (*cb.BlockchainInfo, error) {
 	return mbs.blockchainInfo, mbs.getBlockchainInfoError
 }
 
-func (mbs *mockBlockStore) RetrieveBlocks(startNum uint64) (cl.ResultsIterator, error) {
+func (mbs *mockBlockStore) RetrieveBlocks(_ context.Context, startNum uint64) (cl.ResultsIterator, error) {
 	return mbs.resultsIterator, mbs.defaultError
 }
 
@@ -197,7 +198,7 @@ func TestRetrieval(t *testing.T) {
 	envelope := getSampleEnvelopeWithSignatureHeader()
 	b1 := blockledger.CreateNextBlock(fl, []*cb.Envelope{envelope})
 	fl.Append(b1)
-	it, num := fl.Iterator(&ab.SeekPosition{Type: &ab.SeekPosition_Oldest{}})
+	it, num := fl.Iterator(t.Context(), &ab.SeekPosition{Type: &ab.SeekPosition_Oldest{}})
 	defer it.Close()
 	require.Zero(t, num, "Expected genesis block iterator, but got %d", num)
 
@@ -217,7 +218,7 @@ func TestRetrieval(t *testing.T) {
 func TestBlockedRetrieval(t *testing.T) {
 	tev, fl := initialize(t)
 	defer tev.tearDown()
-	it, num := fl.Iterator(&ab.SeekPosition{Type: &ab.SeekPosition_Specified{Specified: &ab.SeekSpecified{Number: 1}}})
+	it, num := fl.Iterator(t.Context(), &ab.SeekPosition{Type: &ab.SeekPosition_Specified{Specified: &ab.SeekSpecified{Number: 1}}})
 	defer it.Close()
 	if num != 1 {
 		t.Fatalf("Expected block iterator at 1, but got %d", num)
@@ -244,7 +245,7 @@ func TestBlockedRetrieval(t *testing.T) {
 	require.Equal(t, uint64(2), block.Header.Number, "Expected to successfully retrieve the third block")
 
 	// verify NextCommit seek position
-	it2, num2 := fl.Iterator(&ab.SeekPosition{Type: &ab.SeekPosition_NextCommit{NextCommit: &ab.SeekNextCommit{}}})
+	it2, num2 := fl.Iterator(t.Context(), &ab.SeekPosition{Type: &ab.SeekPosition_NextCommit{NextCommit: &ab.SeekNextCommit{}}})
 	require.Equal(t, uint64(3), num2)
 	defer it2.Close()
 
@@ -272,23 +273,23 @@ func TestBlockRetrievalWithSnapshot(t *testing.T) {
 	require.Equal(t, uint64(numBlocks-1), bcInfo.BootstrappingSnapshotInfo.LastBlockInSnapshot)
 
 	// verify iterator startingNum for Newest, NextCommit, and Specified
-	it, startingNum := fl.Iterator(&ab.SeekPosition{Type: &ab.SeekPosition_Newest{}})
+	it, startingNum := fl.Iterator(t.Context(), &ab.SeekPosition{Type: &ab.SeekPosition_Newest{}})
 	defer it.Close()
 	require.Equal(t, uint64(numBlocks), startingNum)
 
-	it2, startingNum2 := fl.Iterator(&ab.SeekPosition{Type: &ab.SeekPosition_NextCommit{}})
+	it2, startingNum2 := fl.Iterator(t.Context(), &ab.SeekPosition{Type: &ab.SeekPosition_NextCommit{}})
 	defer it2.Close()
 	require.Equal(t, uint64(numBlocks), startingNum2)
 
-	it3, startingNum3 := fl.Iterator(&ab.SeekPosition{Type: &ab.SeekPosition_Specified{Specified: &ab.SeekSpecified{Number: uint64(numBlocks)}}})
+	it3, startingNum3 := fl.Iterator(t.Context(), &ab.SeekPosition{Type: &ab.SeekPosition_Specified{Specified: &ab.SeekSpecified{Number: uint64(numBlocks)}}})
 	defer it3.Close()
 	require.Equal(t, uint64(numBlocks), startingNum3)
 
-	it4, _ := fl.Iterator(&ab.SeekPosition{Type: &ab.SeekPosition_Specified{Specified: &ab.SeekSpecified{Number: uint64(numBlocks - 1)}}})
+	it4, _ := fl.Iterator(t.Context(), &ab.SeekPosition{Type: &ab.SeekPosition_Specified{Specified: &ab.SeekSpecified{Number: uint64(numBlocks - 1)}}})
 	defer it4.Close()
 	require.Equal(t, &blockledger.NotFoundErrorIterator{}, it4)
 
-	it5, _ := fl.Iterator(&ab.SeekPosition{Type: &ab.SeekPosition_Specified{Specified: &ab.SeekSpecified{Number: uint64(numBlocks + 1)}}})
+	it5, _ := fl.Iterator(t.Context(), &ab.SeekPosition{Type: &ab.SeekPosition_Specified{Specified: &ab.SeekSpecified{Number: uint64(numBlocks + 1)}}})
 	defer it5.Close()
 	require.Equal(t, &blockledger.NotFoundErrorIterator{}, it4)
 
@@ -325,7 +326,7 @@ func TestBlockstoreError(t *testing.T) {
 		require.Panics(
 			t,
 			func() {
-				fl.Iterator(&ab.SeekPosition{Type: &ab.SeekPosition_Newest{}})
+				fl.Iterator(t.Context(), &ab.SeekPosition{Type: &ab.SeekPosition_Newest{}})
 			},
 			"Expected Iterator() to panic if blockstore operation fails")
 
@@ -344,7 +345,7 @@ func TestBlockstoreError(t *testing.T) {
 			},
 			signal: make(chan struct{}),
 		}
-		it, _ := fl.Iterator(&ab.SeekPosition{Type: &ab.SeekPosition_Specified{Specified: &ab.SeekSpecified{Number: 42}}})
+		it, _ := fl.Iterator(t.Context(), &ab.SeekPosition{Type: &ab.SeekPosition_Specified{Specified: &ab.SeekSpecified{Number: 42}}})
 		defer it.Close()
 		require.IsType(
 			t,
@@ -366,7 +367,7 @@ func TestBlockstoreError(t *testing.T) {
 			},
 			signal: make(chan struct{}),
 		}
-		it, _ := fl.Iterator(&ab.SeekPosition{Type: &ab.SeekPosition_Oldest{}})
+		it, _ := fl.Iterator(t.Context(), &ab.SeekPosition{Type: &ab.SeekPosition_Oldest{}})
 		defer it.Close()
 		_, status := it.Next()
 		require.Equal(t, cb.Status_SERVICE_UNAVAILABLE, status, "Expected service unavailable error")

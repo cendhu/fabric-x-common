@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package blockledger
 
 import (
+	"context"
+
 	cb "github.com/hyperledger/fabric-protos-go-apiv2/common"
 	ab "github.com/hyperledger/fabric-protos-go-apiv2/orderer"
 )
@@ -40,7 +42,7 @@ type Iterator interface {
 type Reader interface {
 	// Iterator returns an Iterator, as specified by an ab.SeekInfo message, and
 	// its starting block number
-	Iterator(startType *ab.SeekPosition) (Iterator, uint64)
+	Iterator(ctx context.Context, startType *ab.SeekPosition) (Iterator, uint64)
 	// Height returns the number of blocks on the ledger
 	Height() uint64
 	// retrieve blockByNumber

@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package blockledger
 
 import (
+	"context"
+
 	cb "github.com/hyperledger/fabric-protos-go-apiv2/common"
 	ab "github.com/hyperledger/fabric-protos-go-apiv2/orderer"
 	"google.golang.org/protobuf/proto"
@@ -52,7 +54,7 @@ func CreateNextBlock(rl Reader, messages []*cb.Envelope) *cb.Block {
 	var err error
 
 	if rl.Height() > 0 {
-		it, _ := rl.Iterator(&ab.SeekPosition{
+		it, _ := rl.Iterator(context.Background(), &ab.SeekPosition{
 			Type: &ab.SeekPosition_Newest{
 				Newest: &ab.SeekNewest{},
 			},
@@ -85,7 +87,7 @@ func CreateNextBlock(rl Reader, messages []*cb.Envelope) *cb.Block {
 
 // GetBlock is a utility method for retrieving a single block
 func GetBlock(rl Reader, index uint64) *cb.Block {
-	iterator, _ := rl.Iterator(&ab.SeekPosition{
+	iterator, _ := rl.Iterator(context.Background(), &ab.SeekPosition{
 		Type: &ab.SeekPosition_Specified{
 			Specified: &ab.SeekSpecified{Number: index},
 		},

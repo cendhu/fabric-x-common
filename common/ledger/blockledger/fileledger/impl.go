@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package fileledger
 
 import (
+	"context"
+
 	cb "github.com/hyperledger/fabric-protos-go-apiv2/common"
 	ab "github.com/hyperledger/fabric-protos-go-apiv2/orderer"
 
@@ -30,7 +32,7 @@ type FileLedgerBlockStore interface {
 	AddBlockNoSync(block *cb.Block) error
 	Flush() error
 	GetBlockchainInfo() (*cb.BlockchainInfo, error)
-	RetrieveBlocks(startBlockNumber uint64) (ledger.ResultsIterator, error)
+	RetrieveBlocks(ctx context.Context, startBlockNumber uint64) (ledger.ResultsIterator, error)
 	Shutdown()
 	RetrieveBlockByNumber(blockNum uint64) (*cb.Block, error)
 }
@@ -68,7 +70,7 @@ func (i *fileLedgerIterator) Close() {
 
 // Iterator returns an Iterator, as specified by an ab.SeekInfo message, and its
 // starting block number
-func (fl *FileLedger) Iterator(startPosition *ab.SeekPosition) (blockledger.Iterator, uint64) {
+func (fl *FileLedger) Iterator(ctx context.Context, startPosition *ab.SeekPosition) (blockledger.Iterator, uint64) {
 	var startingBlockNumber uint64
 	switch start := startPosition.Type.(type) {
 	case *ab.SeekPosition_Oldest:
@@ -95,7 +97,7 @@ func (fl *FileLedger) Iterator(startPosition *ab.SeekPosition) (blockledger.Iter
 		return &blockledger.NotFoundErrorIterator{}, 0
 	}
 
-	iterator, err := fl.blockStore.RetrieveBlocks(startingBlockNumber)
+	iterator, err := fl.blockStore.RetrieveBlocks(ctx, startingBlockNumber)
 	if err != nil {
 		logger.Warnw("Failed to initialize block iterator", "blockNum", startingBlockNumber, "error", err)
 		return &blockledger.NotFoundErrorIterator{}, 0

@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package blkstorage
 
 import (
+	"context"
 	"sync"
 
 	"github.com/hyperledger/fabric-x-common/common/ledger"
@@ -15,6 +16,7 @@ import (
 // blocksItr - an iterator for iterating over a sequence of blocks
 type blocksItr struct {
 	mgr                  *blockfileMgr
+	ctx                  context.Context
 	maxBlockNumAvailable uint64
 	blockNumToRetrieve   uint64
 	stream               *blockStream
@@ -22,16 +24,28 @@ type blocksItr struct {
 	closeMarkerLock      *sync.Mutex
 }
 
-func newBlockItr(mgr *blockfileMgr, startBlockNum uint64) *blocksItr {
+func newBlockItr(ctx context.Context, mgr *blockfileMgr, startBlockNum uint64) *blocksItr {
 	mgr.blkfilesInfoCond.L.Lock()
 	defer mgr.blkfilesInfoCond.L.Unlock()
-	return &blocksItr{mgr, mgr.blockfilesInfo.lastPersistedBlock, startBlockNum, nil, false, &sync.Mutex{}}
+	return &blocksItr{
+		mgr:                  mgr,
+		ctx:                  ctx,
+		maxBlockNumAvailable: mgr.blockfilesInfo.lastPersistedBlock,
+		blockNumToRetrieve:   startBlockNum,
+		closeMarkerLock:      &sync.Mutex{},
+	}
 }
 
 func (itr *blocksItr) waitForBlock(blockNum uint64) uint64 {
 	itr.mgr.blkfilesInfoCond.L.Lock()
 	defer itr.mgr.blkfilesInfoCond.L.Unlock()
-	for itr.mgr.blockfilesInfo.lastPersistedBlock < blockNum && !itr.shouldClose() {
+
+	stop := context.AfterFunc(itr.ctx, func() {
+		itr.mgr.blkfilesInfoCond.Broadcast()
+	})
+	defer stop()
+
+	for itr.mgr.blockfilesInfo.lastPersistedBlock < blockNum && !itr.shouldClose() && itr.ctx.Err() == nil {
 		logger.Debugf("Going to wait for newer blocks. maxAvailaBlockNumber=[%d], waitForBlockNum=[%d]",
 			itr.mgr.blockfilesInfo.lastPersistedBlock, blockNum)
 		itr.mgr.blkfilesInfoCond.Wait()
@@ -67,6 +81,9 @@ func (itr *blocksItr) Next() (ledger.QueryResult, error) {
 	defer itr.closeMarkerLock.Unlock()
 	if itr.closeMarker {
 		return nil, nil
+	}
+	if err := itr.ctx.Err(); err != nil {
+		return nil, err
 	}
 
 	cachedBlock, existsInCache := itr.mgr.cache.get(itr.blockNumToRetrieve)

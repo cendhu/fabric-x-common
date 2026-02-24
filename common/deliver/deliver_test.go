@@ -341,7 +341,7 @@ var _ = ginkgo.Describe("Deliver", func() {
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 			gomega.Expect(fakeBlockReader.IteratorCallCount()).To(gomega.Equal(1))
-			startPosition := fakeBlockReader.IteratorArgsForCall(0)
+			_, startPosition := fakeBlockReader.IteratorArgsForCall(0)
 			gomega.Expect(startPosition).To(test.ProtoEqual(seekInfo.Start))
 		})
 
@@ -423,7 +423,7 @@ var _ = ginkgo.Describe("Deliver", func() {
 				gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 				gomega.Expect(fakeBlockReader.IteratorCallCount()).To(gomega.Equal(1))
-				start := fakeBlockReader.IteratorArgsForCall(0)
+				_, start := fakeBlockReader.IteratorArgsForCall(0)
 				gomega.Expect(start).To(test.ProtoEqual(&ab.SeekPosition{}))
 				gomega.Expect(fakeBlockIterator.NextCallCount()).To(gomega.Equal(1))
 
@@ -453,7 +453,7 @@ var _ = ginkgo.Describe("Deliver", func() {
 				gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 				gomega.Expect(fakeBlockReader.IteratorCallCount()).To(gomega.Equal(1))
-				start := fakeBlockReader.IteratorArgsForCall(0)
+				_, start := fakeBlockReader.IteratorArgsForCall(0)
 				gomega.Expect(start).To(test.ProtoEqual(&ab.SeekPosition{}))
 
 				gomega.Expect(fakeBlockIterator.NextCallCount()).To(gomega.Equal(2))
@@ -525,7 +525,7 @@ var _ = ginkgo.Describe("Deliver", func() {
 				gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 				gomega.Expect(fakeBlockReader.IteratorCallCount()).To(gomega.Equal(1))
-				start := fakeBlockReader.IteratorArgsForCall(0)
+				_, start := fakeBlockReader.IteratorArgsForCall(0)
 				gomega.Expect(start).To(test.ProtoEqual(&ab.SeekPosition{}))
 
 				gomega.Expect(fakeBlockIterator.NextCallCount()).To(gomega.Equal(2))
@@ -592,7 +592,7 @@ var _ = ginkgo.Describe("Deliver", func() {
 					err := handler.Handle(context.Background(), server)
 					gomega.Expect(err).NotTo(gomega.HaveOccurred())
 					gomega.Expect(fakeBlockReader.IteratorCallCount()).To(gomega.Equal(1))
-					start := fakeBlockReader.IteratorArgsForCall(0)
+					_, start := fakeBlockReader.IteratorArgsForCall(0)
 					gomega.Expect(start).To(test.ProtoEqual(&ab.SeekPosition{}))
 					gomega.Expect(fakeBlockIterator.NextCallCount()).To(gomega.Equal(3))
 					gomega.Expect(fakeResponseSender.SendBlockResponseCallCount()).To(gomega.Equal(3))
