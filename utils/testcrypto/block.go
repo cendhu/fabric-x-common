@@ -29,13 +29,22 @@ type BlockPrepareParameters struct {
 	UseIdentifierHeader bool
 	// ConsenterIDs for UseIdentifierHeader (must match ConsenterSigners length).
 	ConsenterIDs []uint32
+	// InPlace skips the deep clone and writes into the block passed in. Only for a caller that owns
+	// the block: the clone is what makes it safe to prepare a block that is reused or submitted twice.
+	InPlace bool
+	// ReuseDataHash takes the data hash from the block's existing header instead of computing it, for
+	// a caller that hashed the data off this call's critical path. Ignored when no hash is present, so
+	// forgetting to supply one gives a correct block rather than a silently corrupt one.
+	ReuseDataHash bool
 }
 
 var logger = flogging.MustGetLogger("testcrypto")
 
 // PrepareBlockHeaderAndMetadata adds a valid header and metadata to the block.
 func PrepareBlockHeaderAndMetadata(block *common.Block, p BlockPrepareParameters) *common.Block {
-	block = proto.CloneOf(block)
+	if !p.InPlace {
+		block = proto.CloneOf(block)
+	}
 	var blockNumber uint64
 	var previousHash []byte
 	if p.PrevBlock != nil {
@@ -45,9 +54,13 @@ func PrepareBlockHeaderAndMetadata(block *common.Block, p BlockPrepareParameters
 	if block.Data == nil {
 		block.Data = &common.BlockData{}
 	}
+	dataHash := block.Header.GetDataHash()
+	if !p.ReuseDataHash || len(dataHash) == 0 {
+		dataHash = protoutil.ComputeBlockDataHash(block.Data)
+	}
 	block.Header = &common.BlockHeader{
 		Number:       blockNumber,
-		DataHash:     protoutil.ComputeBlockDataHash(block.Data),
+		DataHash:     dataHash,
 		PreviousHash: previousHash,
 	}
 	meta := block.Metadata
